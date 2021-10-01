@@ -40,50 +40,77 @@ int Merge(int* A, int& szA, int* B, int szB)
     return 0;
 }
 
+// Assumes that A and B individually have no duplicates in them
+// Merges array B into array A eliminating any duplicates
+// A must be large enough to hold resulting values
+// If A is not large enough, returns -1 and sets szA to the required size
+// If merge is successful, returns new count of items in A
 int MergeUnique(int* A, int& szA, int* B, int szB)
 {
     int i = 0;
     int j = 0;
     int unique = 0;
-    map<int,int> values;
 
-    // Use the map to track each number. Incrementing it the first time
-    // will add the entry to the map.
-    // The result will be the list of keys in the map is the de-duplicated
-    // list of numbers in both arrays.
-    for (int i = 0; i < szA && A[i+1] >= 0; i++)
-    {
-        values[A[i]]++;
-    }
+    // Count all unique values
+    while(i < szA && A[i] >= 0)
+    { 
+        unique++;
 
-    for (int i = 0; i < szB; i++)
-    {
-        values[B[i]]++;
-    }
-
-    if (values.size() > szA)
-    {
-        szA = values.size();
-        return -1;
-    }
-
-    map<int,int>::iterator iter = values.begin();
-    for (int i = 0; i < szA; i++)
-    {
-        // If the number of total elements in A decreases as a result of de-deplication
-        // then we need to mark the remaining elements as invalid
-        if (iter == values.end())
+        if (j == szB)
         {
-            A[i] = -1;
+            i++;
+        }
+        else if (A[i] < B[j])
+        {
+            i++;
+        }
+        else if (A[i] > B[j])
+        {
+            j++;
         }
         else
         {
-            A[i] = iter->first;
-            iter++;
+            i++;
+            j++;
         }
     }
 
-    return 0;
+    unique += szB - j;
+
+    // If A is not large enough, return
+    if (szA < unique)
+    {
+        szA = unique;
+        return -1;
+    }
+
+    i--;
+    j = szB - 1;
+
+    // Start at the last entry needed in A and work backwards
+    for (int k=unique -1; k>=0; k--)
+    {
+        // If A[i] is larger OR we have run out of items in B
+        if ((i >= 0 && j < 0) || A[i] > B[j])
+        {
+            A[k] = A[i--];
+        }
+
+        // If B[j] is larger OR we have run out of items in A
+        else if ((i<0 && j >= 0) || B[j] > A[i])
+        {
+            A[k] = B[j--];
+        }
+
+        // If A[i] == B[j], take one and decrement both counters
+        else
+        {
+            A[k] = A[i--];
+            j--;
+        }
+    }
+
+    return unique;
 }
 
 void PrintArray(int* arr, int sz)
@@ -98,7 +125,7 @@ int main()
 {
     int *A = new int[]{1,2,4,5,7,10,15,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
     int szA = 19;
-    int B[] = {1,2,6,8,12,15,18,19,20};
+    int B[] = {5,6,8,12,15,18,19,20,23};
     int szB = sizeof(B) / sizeof(int);
 
     cout << "Merging arrays\n";
@@ -108,9 +135,12 @@ int main()
 
     cout << "\n\n";
 
+    // A is large enough. Expect valid array:
+    // 1,2,4,5,6,7,8,10,12,15,18,19,20,21,22,23
+    // Return value of 16
     delete[] A;
-    A = new int[]{ 1,2,4,5,7,10,15,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
-    szA = 19;
+    A = new int[]{ 1,2,4,5,7,10,15,21,22,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
+    szA = 20;
     cout << "Merging arrays removing duplicates\n";
     retVal = MergeUnique(A, szA, &B[0], szB);
     cout << "return value = " << retVal << '\n';
@@ -118,6 +148,7 @@ int main()
 
     cout << "\n\n";
 
+    // A will be too small. Expect return of -1, szA to be set to 11
     delete[] A;
     A = new int[] { 1,2 };
     szA = 2;
